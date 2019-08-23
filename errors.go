@@ -95,6 +95,9 @@ package errors
 import (
 	"fmt"
 	"io"
+	"strconv"
+
+	"github.com/rabbitwlele/errors/ecode"
 )
 
 // New returns an error with the supplied message.
@@ -245,8 +248,40 @@ func (w *withMessage) Format(s fmt.State, verb rune) {
 	switch verb {
 	case 'v':
 		if s.Flag('+') {
-			fmt.Fprintf(s, "%+v\n", w.Cause())
-			io.WriteString(s, w.msg)
+			io.WriteString(s, w.msg+"->")
+			fmt.Fprintf(s, "%+v", w.Cause())
+			return
+		}
+		fallthrough
+	case 's', 'q':
+		io.WriteString(s, w.Error())
+	}
+}
+
+type withCode struct {
+	cause error
+	code  ecode.Ecode
+}
+
+func WithCode(err error, code ecode.Ecode) error {
+	if err == nil {
+		return nil
+	}
+	return &withCode{
+		cause: err,
+		code:  code,
+	}
+}
+func (w *withCode) Error() string     { return "(" + strconv.Itoa(w.code.Code()) + ")" + w.cause.Error() }
+func (w *withCode) Cause() error      { return w.cause }
+func (w *withCode) Code() ecode.Ecode { return w.code }
+
+func (w *withCode) Format(s fmt.State, verb rune) {
+	switch verb {
+	case 'v':
+		if s.Flag('+') {
+			io.WriteString(s, w.code.Message()+":"+strconv.Itoa(w.code.Code())+"->")
+			fmt.Fprintf(s, "%+v", w.Cause())
 			return
 		}
 		fallthrough
@@ -279,4 +314,28 @@ func Cause(err error) error {
 		err = cause.Cause()
 	}
 	return err
+}
+
+func Code(err error) ecode.Ecode {
+	if err == nil {
+		return ecode.OK
+	}
+	type causer interface {
+		Cause() error
+	}
+	type coder interface {
+		Code() ecode.Ecode
+	}
+
+	for err != nil {
+		if code, ok := err.(coder); ok {
+			return code.Code()
+		}
+		cause, ok := err.(causer)
+		if !ok {
+			break
+		}
+		err = cause.Cause()
+	}
+	return ecode.UnknownErr
 }

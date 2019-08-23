@@ -6,8 +6,6 @@ import (
 	"io"
 	"reflect"
 	"testing"
-
-	"github.com/rabbitwlele/errors/ecode"
 )
 
 func TestNew(t *testing.T) {
@@ -227,7 +225,7 @@ func TestWithMessagef(t *testing.T) {
 }
 
 func TestWithCodeNil(t *testing.T) {
-	got := WithCode(nil, ecode.OK)
+	got := WithCode(nil, OK)
 	if got != nil {
 		t.Errorf("WithCode(nil, \"no error\"): got %#v, expected nil", got)
 	}
@@ -236,12 +234,12 @@ func TestWithCodeNil(t *testing.T) {
 func TestWithCode(t *testing.T) {
 	tests := []struct {
 		err  error
-		code ecode.Ecode
+		code Ecode
 		want string
 	}{
-		{io.EOF, ecode.OK, "(0)EOF"},
-		{WithCode(io.EOF, ecode.OK), ecode.ServerErr, "(500)(0)EOF"},
-		{WithCode(io.EOF, ecode.OK), ecode.UnknownErr, "(900)(0)EOF"},
+		{io.EOF, OK, "(0)EOF"},
+		{WithCode(io.EOF, OK), ServerErr, "(500)(0)EOF"},
+		{WithCode(io.EOF, OK), UnknownErr, "(900)(0)EOF"},
 	}
 
 	for _, tt := range tests {
@@ -269,8 +267,8 @@ func TestErrorEquality(t *testing.T) {
 		WithMessage(io.EOF, "whoops"),
 		WithStack(io.EOF),
 		WithStack(nil),
-		WithCode(nil, ecode.OK),
-		WithCode(io.EOF, ecode.OK),
+		WithCode(nil, OK),
+		WithCode(io.EOF, OK),
 	}
 
 	for i := range vals {

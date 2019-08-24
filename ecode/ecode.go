@@ -24,6 +24,8 @@ type Ecode interface {
 	Code() int
 	// Message get code message.
 	Message() string
+
+	Error() string
 }
 
 type code struct {
@@ -34,3 +36,5 @@ type code struct {
 func (e code) Code() int { return int(e.code) }
 
 func (e code) Message() string { return e.message }
+
+func (e code) Error() string { return e.message }

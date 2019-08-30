@@ -1,59 +1,57 @@
-# errors [![Travis-CI](https://travis-ci.org/pkg/errors.svg)](https://travis-ci.org/pkg/errors) [![AppVeyor](https://ci.appveyor.com/api/projects/status/b98mptawhudj53ep/branch/master?svg=true)](https://ci.appveyor.com/project/davecheney/errors/branch/master) [![GoDoc](https://godoc.org/github.com/pkg/errors?status.svg)](http://godoc.org/github.com/pkg/errors) [![Report card](https://goreportcard.com/badge/github.com/pkg/errors)](https://goreportcard.com/report/github.com/pkg/errors) [![Sourcegraph](https://sourcegraph.com/github.com/pkg/errors/-/badge.svg)](https://sourcegraph.com/github.com/pkg/errors?badge)
+## 生成一个error
 
-Package errors provides simple error handling primitives.
+和原生error方法相同，会自动记录stack
 
-`go get github.com/pkg/errors`
-
-The traditional error handling idiom in Go is roughly akin to
 ```go
-if err != nil {
-        return err
-}
+err :=  errors.New()
 ```
-which applied recursively up the call stack results in error reports without context or debugging information. The errors package allows programmers to add context to the failure path in their code in a way that does not destroy the original value of the error.
 
-## Adding context to an error
+## 给error添加stack或者message
 
-The errors.Wrap function returns a new error that adds context to the original error. For example
+场景一般是已经接受一个error，需要保存栈信息
+
 ```go
-_, err := ioutil.ReadAll(r)
-if err != nil {
-        return errors.Wrap(err, "read failed")
-}
+//adding stack to an error
+err := io.EOF
+err = errors.WithStack(err)
+err = errors.WithMessage(err)
 ```
-## Retrieving the cause of an error
 
-Using `errors.Wrap` constructs a stack of errors, adding context to the preceding error. Depending on the nature of the error it may be necessary to reverse the operation of errors.Wrap to retrieve the original error for inspection. Any error value which implements this interface can be inspected by `errors.Cause`.
+### 获取根因
+
+会获取生成链最底端的error
+
 ```go
-type causer interface {
-        Cause() error
-}
-```
-`errors.Cause` will recursively retrieve the topmost error which does not implement `causer`, which is assumed to be the original cause. For example:
-```go
-switch err := errors.Cause(err).(type) {
-case *MyError:
+switch err := errors.Cause(err) {
+case io.EOF:
         // handle specifically
 default:
         // unknown error
 }
 ```
 
-[Read the package documentation for more information](https://godoc.org/github.com/pkg/errors).
+## 给error追加code信息
 
-## Roadmap
+### 创建code
 
-With the upcoming [Go2 error proposals](https://go.googlesource.com/proposal/+/master/design/go2draft.md) this package is moving into maintenance mode. The roadmap for a 1.0 release is as follows:
+```go
+import 'github.com/rabbitwlele/errors/code'
+UserNotFound := code.New(1001,"user not found")
+RecordNotFound := code.New(1002,"record not found")  
+```
 
-- 0.9. Remove pre Go 1.9 support, address outstanding pull requests (if possible)
-- 1.0. Final release.
+### 追加和获取code
 
-## Contributing
+```go
+err = errors.WithCode(err,UserNotFound)
+fmt.Pritntln(errors.Code(err).Code() , errors.Code().Message()) //1001 user not found
+err = errors.WithCode(err,RecordNotFound)
+fmt.Pritntln(errors.Code(err).Code() , errors.Code().Message()) //1002 record not found
+```
 
-Because of the Go2 errors changes, this package is not accepting proposals for new functionality. With that said, we welcome pull requests, bug fixes and issue reports. 
+## 建议
 
-Before sending a PR, please discuss your change by raising an issue.
-
-## License
-
-BSD-2-Clause
+1. 第三方包返回的error包装stack和code
+2. 内部的包不直接不做任何包装
+3. 被调用者函数内部不做任何error打印日志处理，将error抛给调用者
+4. 错误日志统一由最上层的调用者打印

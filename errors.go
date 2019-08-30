@@ -97,7 +97,7 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/rabbitwlele/errors/ecode"
+	"github.com/rabbitwlele/errors/code"
 )
 
 // New returns an error with the supplied message.
@@ -260,10 +260,10 @@ func (w *withMessage) Format(s fmt.State, verb rune) {
 
 type withCode struct {
 	cause error
-	code  ecode.Ecode
+	code  code.Code
 }
 
-func WithCode(err error, code ecode.Ecode) error {
+func WithCode(err error, code code.Code) error {
 	if err == nil {
 		return nil
 	}
@@ -272,9 +272,9 @@ func WithCode(err error, code ecode.Ecode) error {
 		code:  code,
 	}
 }
-func (w *withCode) Error() string     { return "(" + strconv.Itoa(w.code.Code()) + ")" + w.cause.Error() }
-func (w *withCode) Cause() error      { return w.cause }
-func (w *withCode) Code() ecode.Ecode { return w.code }
+func (w *withCode) Error() string   { return "(" + strconv.Itoa(w.code.Code()) + ")" + w.cause.Error() }
+func (w *withCode) Cause() error    { return w.cause }
+func (w *withCode) Code() code.Code { return w.code }
 
 func (w *withCode) Format(s fmt.State, verb rune) {
 	switch verb {
@@ -316,15 +316,15 @@ func Cause(err error) error {
 	return err
 }
 
-func Code(err error) ecode.Ecode {
+func Code(err error) code.Code {
 	if err == nil {
-		return ecode.OK
+		return code.OK
 	}
 	type causer interface {
 		Cause() error
 	}
 	type coder interface {
-		Code() ecode.Ecode
+		Code() code.Code
 	}
 
 	for err != nil {
@@ -337,5 +337,5 @@ func Code(err error) ecode.Ecode {
 		}
 		err = cause.Cause()
 	}
-	return ecode.UnknownErr
+	return code.UnknownErr
 }
